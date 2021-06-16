@@ -2,7 +2,7 @@
 
 通过企业微信机器人，定时向企业微信群中推送随机色图。一次会推送三种格式，`News` `Text` `Image` （因为企业微信有屏蔽功能，可能导致一些`News`格式推送的图片没办法打开，所以加上了后面两种。同时，`Text` 可以设置是否@所有人）
 
-<img src="https://raw.githubusercontent.com/zhangyu0310/wechat-setu-bot/main/pic/Snow.jpg" alt="avatar" style="zoom:25%;" />
+<img src="https://raw.githubusercontent.com/zhangyu0310/wechat-setu-bot/main/pic/Snow.jpg" alt="avatar" style="zoom:15%;" />
 
 ## 使用方法
 
