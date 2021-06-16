@@ -4,7 +4,7 @@
 
 <img src="https://raw.githubusercontent.com/zhangyu0310/wechat-setu-bot/main/pic/Snow.jpg" alt="avatar" style="zoom:15%;" />
 
-## 使用方法
+## 参数说明
 
 ```shell
 .\setuServer.exe -at-all -dl-dir="./pic" -pic-msg -wechat-url="xxx" -intervals=3600 -r18
@@ -21,7 +21,10 @@
 | `-setu-api-url` |         色图API Url          |  默认为`https://api.lolicon.app/setu/v1`   |
 |  `-wechat-url`  |    微信机器人Webhook地址     |                    必填                    |
 
+## 使用方法
 
+1. 创建一个新的企业微信机器人，获取到它的Webhook地址
+2. 将地址填入参数`-wechat-url`  启动服务
 
 ## 关于`-pic-msg`这个参数
 
