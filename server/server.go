@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/nfnt/resize"
 	"image"
+	_ "image/jpeg"
 	"image/png"
 	"io"
 	"io/ioutil"
