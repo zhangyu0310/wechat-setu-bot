@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"os"
 	"setuServer/config"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -191,14 +190,14 @@ func getSetuFromApi() (result Result, err error) {
 			fmt.Println("Download picture failed.", err)
 			return
 		}
-		index := strings.LastIndex(setu.Url, ".")
+		index := strings.LastIndex(setu.Url, "/img/")
 		if index == -1 {
 			_ = dlResp.Body.Close()
 			continue
 		}
-		format := setu.Url[index:]
-		now := time.Now().Format("2006-01-02-15-04-05")
-		path := cfg.PicDownloadDir + "/img" + strconv.Itoa(i) + "-" + now + format
+		name := setu.Url[index + 1:]
+		name = strings.ReplaceAll(name, "/", "-")
+		path := cfg.PicDownloadDir + "/" + name
 		var imgFile *os.File
 		imgFile, err = os.Create(path)
 		if err != nil {
@@ -249,7 +248,7 @@ func picCompress(picPath string) (newPicPath string, err error) {
 	if err != nil {
 		return
 	}
-	newPicPath = picPath + "_" + time.Now().Format("15-04-05")
+	newPicPath = picPath + "_" + time.Now().Format("15-04-05") + ".tmp.png"
 	newPic := resize.Resize(uint(pic.Bounds().Dx()/2), 0, pic, resize.Lanczos3)
 	newPicFile, err := os.OpenFile(newPicPath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
