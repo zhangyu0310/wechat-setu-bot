@@ -17,3 +17,6 @@
 # ./pic downloaded picture.
 pic/*.jpg
 pic/*.png
+
+# Goland directories
+.idea
