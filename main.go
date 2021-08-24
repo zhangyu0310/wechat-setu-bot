@@ -10,7 +10,7 @@ import (
 
 var (
 	setuApiUrl = flag.String("setu-api-url", "https://api.lolicon.app/setu/v1", "Api Url of setu")
-	wechatUrl  = flag.String("wechat-url", "", "Wechat Web Hook Url")
+	wechatUrl  = flag.String("wechat-url", "", "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=8f32332c-93a9-4323-896b-8eb3b30b696a")
 	intervals  = flag.Uint("intervals", 60, "Intervals of post setu.(second) [Minimum is 10s]")
 	r18        = flag.Bool("r18", false, "Post R18 picture")
 	atAll      = flag.Bool("at-all", false, "@all group member")
