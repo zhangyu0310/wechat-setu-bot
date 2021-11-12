@@ -1,0 +1,3 @@
+[submodule "setuDumpProto"]
+	path = setuDumpProto
+	url = https://github.com/zhangyu0310/setuDumpProto.git

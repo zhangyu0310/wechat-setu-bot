@@ -16,6 +16,8 @@ var (
 	atAll      = flag.Bool("at-all", false, "@all group member")
 	picMsg     = flag.Bool("pic-msg", false, "Download picture & send picture msg")
 	dlDir      = flag.String("dl-dir", "./", "Dir of download picture")
+	picDump    = flag.Bool("pic-dump", false, "Dump setu pictures to local server")
+	dumpServer = flag.String("dump-server", "", "Server info to dump pictures")
 )
 
 // cmdConfigSetToGlobal store command config to global config.
@@ -27,6 +29,8 @@ func cmdConfigSetToGlobal(cfg *config.Config) {
 	cfg.AtAll = *atAll
 	cfg.PicMsg = *picMsg
 	cfg.PicDownloadDir = *dlDir
+	cfg.PicDump = *picDump
+	cfg.DumpServer = *dumpServer
 }
 
 func main() {

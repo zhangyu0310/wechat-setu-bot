@@ -2,12 +2,15 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/nfnt/resize"
+	"google.golang.org/grpc"
 	"image"
 	_ "image/jpeg"
 	"image/png"
@@ -16,13 +19,24 @@ import (
 	"net/http"
 	"os"
 	"setuServer/config"
+	"setuServer/picdump"
 	"strings"
 	"time"
 )
 
+// Run The main loop to send setu on time.(This part of the code is very ugly...)
 func Run() {
 	first := true
 	cfg := config.GetGlobalConfig()
+	var dumpClient picdump.CourierClient
+	if cfg.PicDump {
+		conn, err := grpc.Dial(cfg.DumpServer, grpc.WithInsecure())
+		if err != nil {
+			fmt.Println("Connect dump server failed.", err)
+			os.Exit(-1)
+		}
+		dumpClient = picdump.NewCourierClient(conn)
+	}
 	for true {
 		if !first {
 			intervals := cfg.Intervals
@@ -37,6 +51,33 @@ func Run() {
 		if err != nil {
 			fmt.Println("Get setu failed.")
 			continue
+		}
+		if cfg.PicDump {
+			for index, setu := range result.Setus {
+				name, err := getPictureName(setu.Url)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				picFile, err := os.OpenFile(result.picPaths[index], os.O_RDONLY, 0666)
+				if err != nil {
+					continue
+				}
+				pic, err := ioutil.ReadAll(picFile)
+				if err != nil {
+					fmt.Println(err)
+					_ = picFile.Close()
+					continue
+				}
+				reply, err := dumpClient.SendPic(context.Background(), &picdump.PicRequest{Pic: pic})
+				if err != nil {
+					fmt.Println("Call dump pictures rpc failed.", err)
+				} else {
+					fmt.Println("Dump pictures success!", reply.Message)
+					setu.Url = cfg
+				}
+				_ = picFile.Close()
+			}
 		}
 		// Post setu news
 		var articles []Article
@@ -124,6 +165,16 @@ func Run() {
 	}
 }
 
+func getPictureName(url string) (string, error) {
+	index := strings.LastIndex(url, "/img/")
+	if index == -1 {
+		return "", errors.New("can't find index in url")
+	}
+	name := url[index + 1:]
+	name = strings.ReplaceAll(name, "/", "-")
+	return name, nil
+}
+
 // getSetuFromApi get setu info & download setu
 func getSetuFromApi() (result Result, err error) {
 	cfg := config.GetGlobalConfig()
@@ -170,7 +221,7 @@ func getSetuFromApi() (result Result, err error) {
 		fmt.Println("Result error, Code is", result.Code, "Mes:", result.Msg)
 		return
 	}
-	// If don't need picture message, return
+	// Don't need to get picture message, return
 	if !cfg.PicMsg {
 		return
 	}
@@ -190,13 +241,12 @@ func getSetuFromApi() (result Result, err error) {
 			fmt.Println("Download picture failed.", err)
 			return
 		}
-		index := strings.LastIndex(setu.Url, "/img/")
-		if index == -1 {
+		name, err := getPictureName(setu.Url)
+		if err != nil {
+			fmt.Println(err)
 			_ = dlResp.Body.Close()
 			continue
 		}
-		name := setu.Url[index + 1:]
-		name = strings.ReplaceAll(name, "/", "-")
 		path := cfg.PicDownloadDir + "/" + name
 		var imgFile *os.File
 		imgFile, err = os.Create(path)
@@ -214,7 +264,7 @@ func getSetuFromApi() (result Result, err error) {
 	return
 }
 
-// postSetuToWeChat post setu to wechat
+// postSetuToWeChat post setu to WeChat
 func postSetuToWeChat(post interface{}) (err error) {
 	cfg := config.GetGlobalConfig()
 	postStr, err := json.Marshal(post)
@@ -236,6 +286,7 @@ func postSetuToWeChat(post interface{}) (err error) {
 	return
 }
 
+// picCompress Modify size to compress pictures.
 func picCompress(picPath string) (newPicPath string, err error) {
 	picFile, err := os.OpenFile(picPath, os.O_RDONLY, 0666)
 	if err != nil {

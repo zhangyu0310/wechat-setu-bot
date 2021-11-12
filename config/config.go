@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 )
 
-// Config config info of server.
+// Config Configurations of server.
 type Config struct {
 	SetuApiUrl     string
 	WeChatUrl      string
@@ -13,6 +13,9 @@ type Config struct {
 	AtAll          bool
 	PicMsg         bool
 	PicDownloadDir string
+	PicDump        bool
+	DumpServer     string
+	DumpUrl        string
 }
 
 var (
