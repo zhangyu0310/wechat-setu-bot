@@ -46,7 +46,7 @@ func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, 
 			fmt.Println("Call dump pictures rpc failed.", err)
 		} else {
 			fmt.Println("Dump pictures success!", reply.Message)
-			setu.Url = dumpUrl + name
+			result.Setus[index].Url = dumpUrl + name
 		}
 		_ = picFile.Close()
 	}
