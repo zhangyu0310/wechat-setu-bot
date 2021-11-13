@@ -145,7 +145,10 @@ func Run() {
 	cfg := config.GetGlobalConfig()
 	var dumpClient picdump.CourierClient
 	if cfg.PicDump {
-		conn, err := grpc.Dial(cfg.DumpServer, grpc.WithInsecure())
+		conn, err := grpc.Dial(cfg.DumpServer, grpc.WithInsecure(),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallSendMsgSize(31457280),
+				grpc.MaxCallRecvMsgSize(31457280)))
 		if err != nil {
 			fmt.Println("Connect dump server failed.", err)
 			os.Exit(-1)
