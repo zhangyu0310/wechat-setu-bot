@@ -24,6 +24,121 @@ import (
 	"time"
 )
 
+func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, dumpUrl string) {
+	for index, setu := range result.Setus {
+		name, err := getPictureName(setu.Url)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		picFile, err := os.OpenFile(result.picPaths[index], os.O_RDONLY, 0666)
+		if err != nil {
+			continue
+		}
+		pic, err := ioutil.ReadAll(picFile)
+		if err != nil {
+			fmt.Println(err)
+			_ = picFile.Close()
+			continue
+		}
+		reply, err := dumpClient.SendPic(context.Background(), &picdump.PicRequest{Pic: pic, PicName: name})
+		if err != nil {
+			fmt.Println("Call dump pictures rpc failed.", err)
+		} else {
+			fmt.Println("Dump pictures success!", reply.Message)
+			setu.Url = dumpUrl + name
+		}
+		_ = picFile.Close()
+	}
+}
+
+func postSetuNews(result Result) (err error) {
+	var articles []Article
+	for i := 0; i < result.Count; i++ {
+		setu := result.Setus[i]
+		desc := fmt.Sprintf("Author: %s, Tags: ", setu.Author)
+		for _, tag := range setu.Tags {
+			desc += tag + " | "
+		}
+		article := Article{Title: setu.Title,
+			Description: desc,
+			Url:         setu.Url,
+			Picurl:      setu.Url}
+		articles = append(articles, article)
+	}
+	postNews := PostWeChatNews{MsgType: "news", News: News{Articles: articles}}
+	err = postSetuToWeChat(postNews)
+	if err != nil {
+		fmt.Println("Post setu news failed.")
+		return
+	}
+	return
+}
+
+func postSetuText(result Result, atAll bool) {
+	for i := 0; i < result.Count; i++ {
+		setu := result.Setus[i]
+		var MentionedList []string
+		if atAll {
+			MentionedList = append(MentionedList, "@all")
+		}
+		postText := PostWeChatText{MsgType: "text",
+			Text: Text{Content: setu.Url,
+				MentionedList: MentionedList}}
+		err := postSetuToWeChat(postText)
+		if err != nil {
+			fmt.Println("Post setu text failed.")
+		}
+	}
+}
+
+func postSetuPic(result Result) {
+	for i := 0; i < result.Count; i++ {
+		picPath := result.getPicPath(uint(i))
+		compress := false
+		for round := 0; round < 5; round++ {
+			fileInfo, err := os.Stat(picPath)
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			if fileInfo.Size() > 2*1024*1024 {
+				picPath, err = picCompress(picPath)
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+			} else {
+				compress = true
+				break
+			}
+		}
+		if compress {
+			picFile, err := os.OpenFile(picPath, os.O_RDONLY, 0666)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			picData, err := ioutil.ReadAll(picFile)
+			if err != nil {
+				fmt.Println(err)
+				_ = picFile.Close()
+				continue
+			}
+			picBase64 := base64.StdEncoding.EncodeToString(picData)
+			md5Hash := md5.New()
+			md5Hash.Write(picData)
+			md5Str := hex.EncodeToString(md5Hash.Sum(nil))
+			postPic := PostWeChatPic{MsgType: "image", Image: Image{Base64: picBase64, Md5: md5Str}}
+			err = postSetuToWeChat(postPic)
+			if err != nil {
+				fmt.Println(err)
+			}
+			_ = picFile.Close()
+		}
+	}
+}
+
 // Run The main loop to send setu on time.(This part of the code is very ugly...)
 func Run() {
 	first := true
@@ -53,114 +168,17 @@ func Run() {
 			continue
 		}
 		if cfg.PicDump {
-			for index, setu := range result.Setus {
-				name, err := getPictureName(setu.Url)
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
-				picFile, err := os.OpenFile(result.picPaths[index], os.O_RDONLY, 0666)
-				if err != nil {
-					continue
-				}
-				pic, err := ioutil.ReadAll(picFile)
-				if err != nil {
-					fmt.Println(err)
-					_ = picFile.Close()
-					continue
-				}
-				reply, err := dumpClient.SendPic(context.Background(), &picdump.PicRequest{Pic: pic})
-				if err != nil {
-					fmt.Println("Call dump pictures rpc failed.", err)
-				} else {
-					fmt.Println("Dump pictures success!", reply.Message)
-					setu.Url = cfg
-				}
-				_ = picFile.Close()
-			}
+			dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
 		}
-		// Post setu news
-		var articles []Article
-		for i := 0; i < result.Count; i++ {
-			setu := result.Setus[i]
-			desc := fmt.Sprintf("Author: %s, Tags: ", setu.Author)
-			for _, tag := range setu.Tags {
-				desc += tag + " | "
-			}
-			article := Article{Title: setu.Title,
-				Description: desc,
-				Url:         setu.Url,
-				Picurl:      setu.Url}
-			articles = append(articles, article)
-		}
-		postNews := PostWeChatNews{MsgType: "news", News: News{Articles: articles}}
-		err = postSetuToWeChat(postNews)
-		if err != nil {
-			fmt.Println("Post setu news failed.")
+		// Post setu by different way
+		if err := postSetuNews(result); err != nil {
+			fmt.Println(err)
 			continue
 		}
-		// Post setu text
-		for i := 0; i < result.Count; i++ {
-			setu := result.Setus[i]
-			var MentionedList []string
-			if cfg.AtAll {
-				MentionedList = append(MentionedList, "@all")
-			}
-			postText := PostWeChatText{MsgType: "text",
-				Text: Text{Content: setu.Url,
-					MentionedList: MentionedList}}
-			err = postSetuToWeChat(postText)
-			if err != nil {
-				fmt.Println("Post setu text failed.")
-			}
-		}
+		postSetuText(result, cfg.AtAll)
 		// Post setu pic
-		if !cfg.PicMsg {
-			continue
-		}
-		for i := 0; i < result.Count; i++ {
-			picPath := result.getPicPath(uint(i))
-			compress := false
-			for round := 0; round < 5; round++ {
-				fileInfo, err := os.Stat(picPath)
-				if err != nil {
-					fmt.Println(err)
-					break
-				}
-				if fileInfo.Size() > 2*1024*1024 {
-					picPath, err = picCompress(picPath)
-					if err != nil {
-						fmt.Println(err)
-						break
-					}
-				} else {
-					compress = true
-					break
-				}
-			}
-			if compress {
-				picFile, err := os.OpenFile(picPath, os.O_RDONLY, 0666)
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
-				picData, err := ioutil.ReadAll(picFile)
-				if err != nil {
-					fmt.Println(err)
-					_ = picFile.Close()
-					continue
-				}
-				picBase64 := base64.StdEncoding.EncodeToString(picData)
-				md5Hash := md5.New()
-				md5Hash.Write(picData)
-				md5Str := hex.EncodeToString(md5Hash.Sum(nil))
-				postPic := PostWeChatPic{MsgType: "image", Image: Image{Base64: picBase64, Md5: md5Str}}
-				err = postSetuToWeChat(postPic)
-				if err != nil {
-					fmt.Println(err)
-				}
-				_ = picFile.Close()
-			}
+		if cfg.PicMsg {
+			postSetuPic(result)
 		}
 	}
 }
@@ -170,7 +188,7 @@ func getPictureName(url string) (string, error) {
 	if index == -1 {
 		return "", errors.New("can't find index in url")
 	}
-	name := url[index + 1:]
+	name := url[index+1:]
 	name = strings.ReplaceAll(name, "/", "-")
 	return name, nil
 }
@@ -241,7 +259,8 @@ func getSetuFromApi() (result Result, err error) {
 			fmt.Println("Download picture failed.", err)
 			return
 		}
-		name, err := getPictureName(setu.Url)
+		var name string
+		name, err = getPictureName(setu.Url)
 		if err != nil {
 			fmt.Println(err)
 			_ = dlResp.Body.Close()

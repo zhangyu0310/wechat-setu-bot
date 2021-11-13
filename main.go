@@ -18,6 +18,7 @@ var (
 	dlDir      = flag.String("dl-dir", "./", "Dir of download picture")
 	picDump    = flag.Bool("pic-dump", false, "Dump setu pictures to local server")
 	dumpServer = flag.String("dump-server", "", "Server info to dump pictures")
+	dumpUrl    = flag.String("dump-url", "", "Url for user get pictures")
 )
 
 // cmdConfigSetToGlobal store command config to global config.
@@ -31,6 +32,7 @@ func cmdConfigSetToGlobal(cfg *config.Config) {
 	cfg.PicDownloadDir = *dlDir
 	cfg.PicDump = *picDump
 	cfg.DumpServer = *dumpServer
+	cfg.DumpUrl = *dumpUrl
 }
 
 func main() {
