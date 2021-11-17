@@ -46,7 +46,7 @@ func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, 
 			fmt.Println("Call dump pictures rpc failed.", err)
 		} else {
 			fmt.Println("Dump pictures success!", reply.Message)
-			result.Setus[index].Url = dumpUrl + name
+			result.Setus[index].DumpUrl = dumpUrl + name
 		}
 		_ = picFile.Close()
 	}
@@ -82,8 +82,12 @@ func postSetuText(result Result, atAll bool) {
 		if atAll {
 			MentionedList = append(MentionedList, "@all")
 		}
+		content := setu.Url
+		if setu.DumpUrl != "" {
+			content = setu.DumpUrl
+		}
 		postText := PostWeChatText{MsgType: "text",
-			Text: Text{Content: setu.Url,
+			Text: Text{Content: content,
 				MentionedList: MentionedList}}
 		err := postSetuToWeChat(postText)
 		if err != nil {

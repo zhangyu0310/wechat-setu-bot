@@ -35,6 +35,7 @@ type Setu struct {
 	Width  int      `json:"width"`
 	Height int      `json:"height"`
 	Tags   []string `json:"tags"`
+	DumpUrl string
 }
 
 type PostWeChatNews struct {
