@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nfnt/resize"
-	"google.golang.org/grpc"
 	"image"
 	_ "image/jpeg"
 	"image/png"
@@ -22,6 +20,9 @@ import (
 	"setuServer/picdump"
 	"strings"
 	"time"
+
+	"github.com/nfnt/resize"
+	"google.golang.org/grpc"
 )
 
 func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, dumpUrl string) {
@@ -66,7 +67,7 @@ func postSetuNews(result Result) (err error) {
 			Picurl:      setu.Url}
 		articles = append(articles, article)
 	}
-	postNews := PostWeChatNews{MsgType: "news", News: News{Articles: articles}}
+	postNews := BotMsgReq{MsgType: BotMsgNews, News: &News{Articles: articles}}
 	err = postSetuToWeChat(postNews)
 	if err != nil {
 		fmt.Println("Post setu news failed.")
@@ -86,9 +87,13 @@ func postSetuText(result Result, atAll bool) {
 		if setu.DumpUrl != "" {
 			content = setu.DumpUrl
 		}
-		postText := PostWeChatText{MsgType: "text",
-			Text: Text{Content: content,
-				MentionedList: MentionedList}}
+		postText := BotMsgReq{
+			MsgType: BotMsgText,
+			Text: &Text{
+				Content:       content,
+				MentionedList: MentionedList,
+			},
+		}
 		err := postSetuToWeChat(postText)
 		if err != nil {
 			fmt.Println("Post setu text failed.")
@@ -133,7 +138,7 @@ func postSetuPic(result Result) {
 			md5Hash := md5.New()
 			md5Hash.Write(picData)
 			md5Str := hex.EncodeToString(md5Hash.Sum(nil))
-			postPic := PostWeChatPic{MsgType: "image", Image: Image{Base64: picBase64, Md5: md5Str}}
+			postPic := BotMsgReq{MsgType: BotMsgImage, Image: &Image{Base64: picBase64, Md5: md5Str}}
 			err = postSetuToWeChat(postPic)
 			if err != nil {
 				fmt.Println(err)
@@ -177,12 +182,14 @@ func Run() {
 		if cfg.PicDump {
 			dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
 		}
-		// Post setu by different way
-		if err := postSetuNews(result); err != nil {
-			fmt.Println(err)
-			continue
-		}
 		postSetuText(result, cfg.AtAll)
+		// Post setu by different way
+		if cfg.NewsMsg {
+			if err := postSetuNews(result); err != nil {
+				fmt.Println(err)
+				continue
+			}
+		}
 		// Post setu pic
 		if cfg.PicMsg {
 			postSetuPic(result)
@@ -291,7 +298,7 @@ func getSetuFromApi() (result Result, err error) {
 }
 
 // postSetuToWeChat post setu to WeChat
-func postSetuToWeChat(post interface{}) (err error) {
+func postSetuToWeChat(post BotMsgReq) (err error) {
 	cfg := config.GetGlobalConfig()
 	postStr, err := json.Marshal(post)
 	if err != nil {
