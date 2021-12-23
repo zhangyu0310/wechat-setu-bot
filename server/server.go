@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nfnt/resize"
-	"google.golang.org/grpc"
 	"image"
 	_ "image/jpeg"
 	"image/png"
@@ -22,6 +20,9 @@ import (
 	"setuServer/picdump"
 	"strings"
 	"time"
+
+	"github.com/nfnt/resize"
+	"google.golang.org/grpc"
 )
 
 func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, dumpUrl string) {
@@ -177,12 +178,14 @@ func Run() {
 		if cfg.PicDump {
 			dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
 		}
-		// Post setu by different way
-		if err := postSetuNews(result); err != nil {
-			fmt.Println(err)
-			continue
-		}
 		postSetuText(result, cfg.AtAll)
+		// Post setu by different way
+		if cfg.NewsMsg {
+			if err := postSetuNews(result); err != nil {
+				fmt.Println(err)
+				continue
+			}
+		}
 		// Post setu pic
 		if cfg.PicMsg {
 			postSetuPic(result)

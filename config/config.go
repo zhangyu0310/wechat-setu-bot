@@ -12,6 +12,7 @@ type Config struct {
 	R18            bool
 	AtAll          bool
 	PicMsg         bool
+	NewsMsg        bool
 	PicDownloadDir string
 	PicDump        bool
 	DumpServer     string
