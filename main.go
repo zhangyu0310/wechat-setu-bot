@@ -6,6 +6,7 @@ import (
 	"os"
 	"setuServer/config"
 	"setuServer/server"
+	"strings"
 )
 
 var (
@@ -27,7 +28,7 @@ var (
 // tagsContentAnalysis analyze tags according to rules
 func tagsContentAnalysis(tagStr string) (tagArr []string) {
 	// FIXME: implement
-	tagArr = append(tagArr, tagStr)
+	tagArr = strings.Split(tagStr, "|")
 	return
 }
 
