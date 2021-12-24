@@ -229,6 +229,7 @@ func getSetuFromApi() (result Result, err error) {
 		fmt.Println("Http request failed.", err)
 		return
 	}
+	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		fmt.Println("Http Do failed.", err)
