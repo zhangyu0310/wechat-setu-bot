@@ -17,6 +17,8 @@ type Config struct {
 	PicDump        bool
 	DumpServer     string
 	DumpUrl        string
+	Tags           []string
+	PicSize        []string
 }
 
 var (

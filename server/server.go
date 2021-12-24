@@ -27,7 +27,7 @@ import (
 
 func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, dumpUrl string) {
 	for index, setu := range result.Setus {
-		name, err := getPictureName(setu.Url)
+		name, err := getPictureName(setu.Urls.Original)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -55,7 +55,7 @@ func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, 
 
 func postSetuNews(result Result) (err error) {
 	var articles []Article
-	for i := 0; i < result.Count; i++ {
+	for i := 0; i < len(result.Setus); i++ {
 		setu := result.Setus[i]
 		desc := fmt.Sprintf("Author: %s, Tags: ", setu.Author)
 		for _, tag := range setu.Tags {
@@ -63,8 +63,8 @@ func postSetuNews(result Result) (err error) {
 		}
 		article := Article{Title: setu.Title,
 			Description: desc,
-			Url:         setu.Url,
-			Picurl:      setu.Url}
+			Url:         setu.Urls.Original,
+			Picurl:      setu.Urls.Original}
 		articles = append(articles, article)
 	}
 	postNews := BotMsgReq{MsgType: BotMsgNews, News: &News{Articles: articles}}
@@ -77,13 +77,13 @@ func postSetuNews(result Result) (err error) {
 }
 
 func postSetuText(result Result, atAll bool) {
-	for i := 0; i < result.Count; i++ {
+	for i := 0; i < len(result.Setus); i++ {
 		setu := result.Setus[i]
 		var MentionedList []string
 		if atAll {
 			MentionedList = append(MentionedList, "@all")
 		}
-		content := setu.Url
+		content := setu.Urls.Original
 		if setu.DumpUrl != "" {
 			content = setu.DumpUrl
 		}
@@ -102,7 +102,7 @@ func postSetuText(result Result, atAll bool) {
 }
 
 func postSetuPic(result Result) {
-	for i := 0; i < result.Count; i++ {
+	for i := 0; i < len(result.Setus); i++ {
 		picPath := result.getPicPath(uint(i))
 		compress := false
 		for round := 0; round < 5; round++ {
@@ -217,13 +217,14 @@ func getSetuFromApi() (result Result, err error) {
 	if cfg.R18 {
 		r18 = 2
 	}
-	query := Query{R18: r18, Num: 1, SmallSize: false}
+
+	query := Query{R18: r18, Num: 1, Tag: cfg.Tags, Size: cfg.PicSize}
 	jsonStr, err := json.Marshal(query)
 	if err != nil {
 		fmt.Println("Marshal json failed.", err)
 		return
 	}
-	req, err := http.NewRequest("GET", cfg.SetuApiUrl, bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest("POST", cfg.SetuApiUrl, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		fmt.Println("Http request failed.", err)
 		return
@@ -250,8 +251,8 @@ func getSetuFromApi() (result Result, err error) {
 		fmt.Println("Json unmarshal failed.", err)
 		return
 	}
-	if result.Code != 0 {
-		fmt.Println("Result error, Code is", result.Code, "Mes:", result.Msg)
+	if result.Error != "" {
+		fmt.Println("Result error! Error message:", result.Error)
 		return
 	}
 	// Don't need to get picture message, return
@@ -259,11 +260,11 @@ func getSetuFromApi() (result Result, err error) {
 		return
 	}
 	// Download setu from pic url.
-	for i := 0; i < result.Count; i++ {
+	for i := 0; i < len(result.Setus); i++ {
 		setu := result.Setus[i]
 		var dlReq *http.Request
 		var dlResp *http.Response
-		dlReq, err = http.NewRequest("GET", setu.Url, bytes.NewBuffer([]byte("")))
+		dlReq, err = http.NewRequest("GET", setu.Urls.Original, bytes.NewBuffer([]byte("")))
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -275,7 +276,7 @@ func getSetuFromApi() (result Result, err error) {
 			return
 		}
 		var name string
-		name, err = getPictureName(setu.Url)
+		name, err = getPictureName(setu.Urls.Original)
 		if err != nil {
 			fmt.Println(err)
 			_ = dlResp.Body.Close()

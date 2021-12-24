@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	setuApiUrl = flag.String("setu-api-url", "https://api.lolicon.app/setu/v1", "Api Url of setu")
+	setuApiUrl = flag.String("setu-api-url", "https://api.lolicon.app/setu/v2", "Api Url of setu")
 	wechatUrl  = flag.String("wechat-url", "", "Wechat Web Hook Url")
 	intervals  = flag.Uint("intervals", 60, "Intervals of post setu.(second) [Minimum is 10s]")
 	r18        = flag.Bool("r18", false, "Post R18 picture")
@@ -20,7 +20,24 @@ var (
 	picDump    = flag.Bool("pic-dump", false, "Dump setu pictures to local server")
 	dumpServer = flag.String("dump-server", "", "Server info to dump pictures")
 	dumpUrl    = flag.String("dump-url", "", "Url for user get pictures")
+	tags       = flag.String("tags", "", "Tags of pictures")
+	picSize    = flag.String("pic-size", "original", "Size list of pictures")
 )
+
+// tagsContentAnalysis analyze tags according to rules
+func tagsContentAnalysis(tagStr string) (tagArr []string) {
+	// FIXME: implement
+	tagArr = append(tagArr, tagStr)
+	return
+}
+
+// getPicSize get pictures size list
+func getPicSize(sizeStr string) (sizeArr []string) {
+	// FIXME: implement
+	// Note: 'original' size must be exists!!!
+	sizeArr = append(sizeArr, sizeStr)
+	return
+}
 
 // cmdConfigSetToGlobal store command config to global config.
 func cmdConfigSetToGlobal(cfg *config.Config) {
@@ -35,6 +52,8 @@ func cmdConfigSetToGlobal(cfg *config.Config) {
 	cfg.PicDump = *picDump
 	cfg.DumpServer = *dumpServer
 	cfg.DumpUrl = *dumpUrl
+	cfg.Tags = tagsContentAnalysis(*tags)
+	cfg.PicSize = getPicSize(*picSize)
 }
 
 func main() {

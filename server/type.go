@@ -1,17 +1,21 @@
 package server
 
+// Query get setu info. TODO: Annotate field can be assigned
 type Query struct {
 	R18 int `json:"r18"`
-	// KeyWord string `json:"keyword"`
 	Num int `json:"num"`
+	// Uid int `json:"uid"`
+	// KeyWord string `json:"keyword"`
+	Tag []string `json:"tag"`
+	Size []string `json:"size"`
 	// Proxy string `json:"proxy"`
-	SmallSize bool `json:"size1200"`
+	// DateAfter int `json:"dateAfter"`
+	// DateBefore int `json:"dateBefore"`
+	// Dsc bool `json:"dsc"`
 }
 
 type Result struct {
-	Code     int    `json:"code"`
-	Msg      string `json:"msg"`
-	Count    int    `json:"count"`
+	Error    string `json:"error"`
 	Setus    []Setu `json:"data"`
 	picPaths []string
 }
@@ -24,17 +28,27 @@ func (result *Result) getPicPath(index uint) string {
 	return result.picPaths[index]
 }
 
+type PicUrl struct {
+	Original string `json:"original"`
+	Regular  string `json:"regular"`
+	Small    string `json:"small"`
+	Thumb    string `json:"thumb"`
+	Mini     string `json:"mini"`
+}
+
 type Setu struct {
 	Pid     int      `json:"pid"`
 	P       int      `json:"p"`
 	Uid     int      `json:"uid"`
 	Title   string   `json:"title"`
 	Author  string   `json:"author"`
-	Url     string   `json:"url"`
 	R18     bool     `json:"r18"`
 	Width   int      `json:"width"`
 	Height  int      `json:"height"`
 	Tags    []string `json:"tags"`
+	Ext     string   `json:"ext"`
+	Date    int      `json:"uploadDate"`
+	Urls    PicUrl   `json:"urls"`
 	DumpUrl string
 }
 
