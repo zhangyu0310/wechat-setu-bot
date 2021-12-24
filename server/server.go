@@ -148,7 +148,7 @@ func postSetuPic(result Result) {
 	}
 }
 
-// Run The main loop to send setu on time.(This part of the code is very ugly...)
+// Run The main loop to send setu on time.
 func Run() {
 	first := true
 	cfg := config.GetGlobalConfig()
@@ -164,15 +164,16 @@ func Run() {
 		}
 		dumpClient = picdump.NewCourierClient(conn)
 	}
+	intervals := cfg.Intervals
+	if intervals < 10 {
+		intervals = 10
+	}
 	for true {
-		if !first {
-			intervals := cfg.Intervals
-			if intervals < 10 {
-				intervals = 10
-			}
+		if first {
+			first = false
+		} else {
 			time.Sleep(time.Duration(intervals) * time.Second)
 		}
-		first = false
 		// Get setu info & download setu picture
 		result, err := getSetuFromApi()
 		if err != nil {
