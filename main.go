@@ -25,6 +25,7 @@ var (
 	transmitServer = flag.String("transmit-server", "", "Server info to transmit setu")
 	tags           = flag.String("tags", "", "Tags of pictures")
 	picSize        = flag.String("pic-size", "original", "Size list of pictures")
+	once           = flag.Bool("once", false, "Run once and exit.")
 )
 
 // tagsContentAnalysis analyze tags according to rules
@@ -63,6 +64,7 @@ func cmdConfigSetToGlobal(cfg *config.Config) {
 	cfg.TransmitServer = *transmitServer
 	cfg.Tags = tagsContentAnalysis(*tags)
 	cfg.PicSize = getPicSize(*picSize)
+	cfg.Once = *once
 }
 
 func main() {

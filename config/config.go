@@ -21,6 +21,7 @@ type Config struct {
 	TransmitServer string
 	Tags           []string
 	PicSize        []string
+	Once           bool
 }
 
 var (

@@ -17,12 +17,14 @@
 |     `-help`     |             帮助             |                                            |
 |  `-intervals`   | 色图推送间隔时间（单位：秒） | 默认60，最小10（别把人家色图服务搞挂了！） |
 |   `-pic-msg`    |     是否推送`Image`消息      |     bool类型，有这个参数的具体原因见下     |
+|   `-news-msg`   |     是否推送`News`消息       |     bool类型，默认为 true                  |
 |     `-r18`      |           懂得都懂           |                  bool类型                  |
 | `-setu-api-url` |         色图API Url          |  默认为`https://api.lolicon.app/setu/v1`   |
 |  `-wechat-url`  |    微信机器人Webhook地址     |                    必填                    |
 |   `-picDump`    |       是否开启图片转储       |                  bool类型                  |
 |  `-dumpServer`  |      图片转储服务器信息      |                  ip:port                   |
 |   `-dumpUrl`    |         图片转储域名         |      推送`Text`格式消息的转储图片Url       |
+|   `-once`       |   执行一次推送后立即退出     |将定时逻辑分离，可使用 crontab 等外部定时机制实现更灵活的控制      |
 
 ## 使用方法
 

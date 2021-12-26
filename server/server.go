@@ -176,10 +176,15 @@ func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 
 // Run The main loop to send setu on time.
 func Run() {
-	first := true
 	cfg := config.GetGlobalConfig()
 	var dumpClient transmit.PicCourierClient
 	var setuClient transmit.SetuCourierClient
+
+	intervals := cfg.Intervals
+	if intervals < 10 {
+		intervals = 10
+	}
+
 	if cfg.PicDump {
 		picConn, err := grpc.Dial(cfg.DumpServer, grpc.WithInsecure(),
 			grpc.WithDefaultCallOptions(
@@ -200,16 +205,7 @@ func Run() {
 		dumpClient = transmit.NewPicCourierClient(picConn)
 		setuClient = transmit.NewSetuCourierClient(setuConn)
 	}
-	intervals := cfg.Intervals
-	if intervals < 10 {
-		intervals = 10
-	}
-	for true {
-		if first {
-			first = false
-		} else {
-			time.Sleep(time.Duration(intervals) * time.Second)
-		}
+	for {
 		// Get setu info & download setu picture
 		result, err := getSetuFromApi()
 		if err != nil {
@@ -235,6 +231,10 @@ func Run() {
 		if cfg.SetuTransmit {
 			transmitSetu(setuClient, messages)
 		}
+		if cfg.Once {
+			break
+		}
+		time.Sleep(time.Duration(intervals) * time.Second)
 	}
 }
 
