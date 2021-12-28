@@ -27,16 +27,20 @@ var (
 
 // tagsContentAnalysis analyze tags according to rules
 func tagsContentAnalysis(tagStr string) (tagArr []string) {
-	// FIXME: implement
-	tagArr = strings.Split(tagStr, "|")
+	tagArr = append(tagArr, tagStr)
 	return
 }
 
 // getPicSize get pictures size list
 func getPicSize(sizeStr string) (sizeArr []string) {
-	// FIXME: implement
 	// Note: 'original' size must be exists!!!
-	sizeArr = append(sizeArr, sizeStr)
+	sizeArr = strings.Split(sizeStr, "|")
+	for _, v := range sizeArr {
+		if v == "original" {
+			return
+		}
+	}
+	sizeArr = append(sizeArr, "original")
 	return
 }
 
