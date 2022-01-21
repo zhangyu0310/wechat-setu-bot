@@ -17,7 +17,7 @@ import (
 	"net/http"
 	"os"
 	"setuServer/config"
-	"setuServer/picdump"
+	"setuServer/transmit"
 	"strings"
 	"time"
 
@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, dumpUrl string) {
+func dumpPictureToLocalServer(result *Result, dumpClient transmit.PicCourierClient, dumpUrl string) {
 	for index, setu := range result.Setus {
 		name, err := getPictureName(setu.Urls.Original)
 		if err != nil {
@@ -42,7 +42,7 @@ func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, 
 			_ = picFile.Close()
 			continue
 		}
-		reply, err := dumpClient.SendPic(context.Background(), &picdump.PicRequest{Pic: pic, PicName: name})
+		reply, err := dumpClient.SendPic(context.Background(), &transmit.PicRequest{Pic: pic, PicName: name})
 		if err != nil {
 			fmt.Println("Call dump pictures rpc failed.", err)
 		} else {
@@ -53,8 +53,25 @@ func dumpPictureToLocalServer(result *Result, dumpClient picdump.CourierClient, 
 	}
 }
 
-func postSetuNews(result Result) (err error) {
-	var articles []Article
+func transmitSetu(courier transmit.SetuCourierClient, messages []BotMsgReq) {
+	for _, msg := range messages {
+		article := msg.News.Articles[0]
+		setuReq := transmit.SeTuRequest{Title: article.Title,
+			Desc:        article.Description,
+			OriginalUrl: article.Picurl,
+			Url:         article.Url,
+			PicBase64:   msg.Image.Base64,
+			PicMd5:      msg.Image.Md5}
+		reply, err := courier.SendSuTu(context.Background(), &setuReq)
+		if err != nil {
+			fmt.Println("Call dump pictures rpc failed.", err)
+		} else {
+			fmt.Println("Dump pictures success!", reply.ErrMessage)
+		}
+	}
+}
+
+func postSetuNews(result Result, transmitMsg *[]BotMsgReq) (err error) {
 	for i := 0; i < len(result.Setus); i++ {
 		setu := result.Setus[i]
 		desc := fmt.Sprintf("Author: %s, Tags: ", setu.Author)
@@ -65,18 +82,21 @@ func postSetuNews(result Result) (err error) {
 			Description: desc,
 			Url:         setu.Urls.Original,
 			Picurl:      setu.Urls.Original}
+		var articles []Article
 		articles = append(articles, article)
-	}
-	postNews := BotMsgReq{MsgType: BotMsgNews, News: &News{Articles: articles}}
-	err = postSetuToWeChat(postNews)
-	if err != nil {
-		fmt.Println("Post setu news failed.")
-		return
+		news := &News{Articles: articles}
+		postNews := BotMsgReq{MsgType: BotMsgNews, News: news}
+		err = postSetuToWeChat(postNews)
+		if err != nil {
+			fmt.Println("Post setu news failed.")
+			return
+		}
+		(*transmitMsg)[i].News = news
 	}
 	return
 }
 
-func postSetuText(result Result, atAll bool) {
+func postSetuText(result Result, atAll bool, transmitMsg *[]BotMsgReq) {
 	for i := 0; i < len(result.Setus); i++ {
 		setu := result.Setus[i]
 		var MentionedList []string
@@ -87,21 +107,23 @@ func postSetuText(result Result, atAll bool) {
 		if setu.DumpUrl != "" {
 			content = setu.DumpUrl
 		}
+		txt := &Text{
+			Content:       content,
+			MentionedList: MentionedList,
+		}
 		postText := BotMsgReq{
 			MsgType: BotMsgText,
-			Text: &Text{
-				Content:       content,
-				MentionedList: MentionedList,
-			},
+			Text:    txt,
 		}
 		err := postSetuToWeChat(postText)
 		if err != nil {
 			fmt.Println("Post setu text failed.")
 		}
+		(*transmitMsg)[i].Text = txt
 	}
 }
 
-func postSetuPic(result Result) {
+func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 	for i := 0; i < len(result.Setus); i++ {
 		picPath := result.getPicPath(uint(i))
 		compress := false
@@ -138,12 +160,15 @@ func postSetuPic(result Result) {
 			md5Hash := md5.New()
 			md5Hash.Write(picData)
 			md5Str := hex.EncodeToString(md5Hash.Sum(nil))
-			postPic := BotMsgReq{MsgType: BotMsgImage, Image: &Image{Base64: picBase64, Md5: md5Str}}
+
+			img := &Image{Base64: picBase64, Md5: md5Str}
+			postPic := BotMsgReq{MsgType: BotMsgImage, Image: img}
 			err = postSetuToWeChat(postPic)
 			if err != nil {
 				fmt.Println(err)
 			}
 			_ = picFile.Close()
+			(*transmitMsg)[i].Image = img
 		}
 	}
 }
@@ -152,7 +177,8 @@ func postSetuPic(result Result) {
 func Run() {
 	first := true
 	cfg := config.GetGlobalConfig()
-	var dumpClient picdump.CourierClient
+	var dumpClient transmit.PicCourierClient
+	var setuClient transmit.SetuCourierClient
 	if cfg.PicDump {
 		conn, err := grpc.Dial(cfg.DumpServer, grpc.WithInsecure(),
 			grpc.WithDefaultCallOptions(
@@ -162,7 +188,8 @@ func Run() {
 			fmt.Println("Connect dump server failed.", err)
 			os.Exit(-1)
 		}
-		dumpClient = picdump.NewCourierClient(conn)
+		dumpClient = transmit.NewPicCourierClient(conn)
+		setuClient = transmit.NewSetuCourierClient(conn)
 	}
 	intervals := cfg.Intervals
 	if intervals < 10 {
@@ -183,17 +210,21 @@ func Run() {
 		if cfg.PicDump {
 			dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
 		}
-		postSetuText(result, cfg.AtAll)
+		var messages []BotMsgReq
+		postSetuText(result, cfg.AtAll, &messages)
 		// Post setu by different way
 		if cfg.NewsMsg {
-			if err := postSetuNews(result); err != nil {
+			if err := postSetuNews(result, &messages); err != nil {
 				fmt.Println(err)
 				continue
 			}
 		}
 		// Post setu pic
 		if cfg.PicMsg {
-			postSetuPic(result)
+			postSetuPic(result, &messages)
+		}
+		if cfg.SetuTransmit {
+			transmitSetu(setuClient, messages)
 		}
 	}
 }

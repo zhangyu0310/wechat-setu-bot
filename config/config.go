@@ -17,6 +17,9 @@ type Config struct {
 	PicDump        bool
 	DumpServer     string
 	DumpUrl        string
+	SetuTransmit   bool
+	TransmitServer string
+	TransmitUrl    string
 	Tags           []string
 	PicSize        []string
 }

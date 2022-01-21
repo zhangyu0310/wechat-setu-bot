@@ -10,19 +10,22 @@ import (
 )
 
 var (
-	setuApiUrl = flag.String("setu-api-url", "https://api.lolicon.app/setu/v2", "Api Url of setu")
-	wechatUrl  = flag.String("wechat-url", "", "Wechat Web Hook Url")
-	intervals  = flag.Uint("intervals", 60, "Intervals of post setu.(second) [Minimum is 10s]")
-	r18        = flag.Bool("r18", false, "Post R18 picture")
-	atAll      = flag.Bool("at-all", false, "@all group member")
-	picMsg     = flag.Bool("pic-msg", false, "Download picture & send picture msg")
-	newsMsg    = flag.Bool("news-msg", true, "Send picture use news message")
-	dlDir      = flag.String("dl-dir", "./", "Dir of download picture")
-	picDump    = flag.Bool("pic-dump", false, "Dump setu pictures to local server")
-	dumpServer = flag.String("dump-server", "", "Server info to dump pictures")
-	dumpUrl    = flag.String("dump-url", "", "Url for user get pictures")
-	tags       = flag.String("tags", "", "Tags of pictures")
-	picSize    = flag.String("pic-size", "original", "Size list of pictures")
+	setuApiUrl     = flag.String("setu-api-url", "https://api.lolicon.app/setu/v2", "Api Url of setu")
+	wechatUrl      = flag.String("wechat-url", "", "Wechat Web Hook Url")
+	intervals      = flag.Uint("intervals", 60, "Intervals of post setu.(second) [Minimum is 10s]")
+	r18            = flag.Bool("r18", false, "Post R18 picture")
+	atAll          = flag.Bool("at-all", false, "@all group member")
+	picMsg         = flag.Bool("pic-msg", false, "Download picture & send picture msg")
+	newsMsg        = flag.Bool("news-msg", true, "Send picture use news message")
+	dlDir          = flag.String("dl-dir", "./", "Dir of download picture")
+	picDump        = flag.Bool("pic-dump", false, "Dump setu pictures to local server")
+	dumpServer     = flag.String("dump-server", "", "Server info to dump pictures")
+	dumpUrl        = flag.String("dump-url", "", "Url for user get pictures")
+	setuTransmit   = flag.Bool("setu-transmit", false, "Transmit setu messages to local server")
+	transmitServer = flag.String("transmit-server", "", "Server info to transmit setu")
+	transmitUrl    = flag.String("transmit-url", "", "Url for user get pictures")
+	tags           = flag.String("tags", "", "Tags of pictures")
+	picSize        = flag.String("pic-size", "original", "Size list of pictures")
 )
 
 // tagsContentAnalysis analyze tags according to rules
@@ -57,6 +60,9 @@ func cmdConfigSetToGlobal(cfg *config.Config) {
 	cfg.PicDump = *picDump
 	cfg.DumpServer = *dumpServer
 	cfg.DumpUrl = *dumpUrl
+	cfg.SetuTransmit = *setuTransmit
+	cfg.TransmitServer = *transmitServer
+	cfg.TransmitUrl = *transmitUrl
 	cfg.Tags = tagsContentAnalysis(*tags)
 	cfg.PicSize = getPicSize(*picSize)
 }

@@ -6,7 +6,7 @@ type Query struct {
 	Num int `json:"num"`
 	// Uid int `json:"uid"`
 	// KeyWord string `json:"keyword"`
-	Tag []string `json:"tag"`
+	Tag  []string `json:"tag"`
 	Size []string `json:"size"`
 	// Proxy string `json:"proxy"`
 	// DateAfter int `json:"dateAfter"`
