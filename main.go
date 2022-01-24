@@ -63,9 +63,6 @@ func cmdConfigSetToGlobal(cfg *config.Config) {
 	cfg.TransmitServer = *transmitServer
 	cfg.Tags = tagsContentAnalysis(*tags)
 	cfg.PicSize = getPicSize(*picSize)
-	if *wechatUrl == "" && *transmitServer == "" {
-		fmt.Println("Warning! Both of Wechat hook url and transmit server are empty.")
-	}
 }
 
 func main() {
@@ -81,10 +78,10 @@ func main() {
 		fmt.Println("Version: v0.1.0")
 		os.Exit(0)
 	}
-	if *wechatUrl == "" {
-		fmt.Println("WeChat Url is required.")
+	if *wechatUrl == "" && *transmitServer == "" {
+		fmt.Println("Error! Both of Wechat hook url and transmit server are empty.")
 		flag.Usage()
-		os.Exit(-1)
+		os.Exit(1)
 	}
 	config.InitializeConfig(cmdConfigSetToGlobal)
 	server.Run()
