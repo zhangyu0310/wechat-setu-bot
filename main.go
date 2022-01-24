@@ -23,7 +23,6 @@ var (
 	dumpUrl        = flag.String("dump-url", "", "Url for user get pictures")
 	setuTransmit   = flag.Bool("setu-transmit", false, "Transmit setu messages to local server")
 	transmitServer = flag.String("transmit-server", "", "Server info to transmit setu")
-	transmitUrl    = flag.String("transmit-url", "", "Url for user get pictures")
 	tags           = flag.String("tags", "", "Tags of pictures")
 	picSize        = flag.String("pic-size", "original", "Size list of pictures")
 )
@@ -62,9 +61,11 @@ func cmdConfigSetToGlobal(cfg *config.Config) {
 	cfg.DumpUrl = *dumpUrl
 	cfg.SetuTransmit = *setuTransmit
 	cfg.TransmitServer = *transmitServer
-	cfg.TransmitUrl = *transmitUrl
 	cfg.Tags = tagsContentAnalysis(*tags)
 	cfg.PicSize = getPicSize(*picSize)
+	if *wechatUrl == "" && *transmitServer == "" {
+		fmt.Println("Warning! Both of Wechat hook url and transmit server are empty.")
+	}
 }
 
 func main() {

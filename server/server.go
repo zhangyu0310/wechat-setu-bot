@@ -180,7 +180,7 @@ func Run() {
 	var dumpClient transmit.PicCourierClient
 	var setuClient transmit.SetuCourierClient
 	if cfg.PicDump {
-		conn, err := grpc.Dial(cfg.DumpServer, grpc.WithInsecure(),
+		picConn, err := grpc.Dial(cfg.DumpServer, grpc.WithInsecure(),
 			grpc.WithDefaultCallOptions(
 				grpc.MaxCallSendMsgSize(31457280),
 				grpc.MaxCallRecvMsgSize(31457280)))
@@ -188,8 +188,16 @@ func Run() {
 			fmt.Println("Connect dump server failed.", err)
 			os.Exit(-1)
 		}
-		dumpClient = transmit.NewPicCourierClient(conn)
-		setuClient = transmit.NewSetuCourierClient(conn)
+		setuConn, err := grpc.Dial(cfg.TransmitServer, grpc.WithInsecure(),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallSendMsgSize(31457280),
+				grpc.MaxCallRecvMsgSize(31457280)))
+		if err != nil {
+			fmt.Println("Connect transmit server failed.", err)
+			os.Exit(-1)
+		}
+		dumpClient = transmit.NewPicCourierClient(picConn)
+		setuClient = transmit.NewSetuCourierClient(setuConn)
 	}
 	intervals := cfg.Intervals
 	if intervals < 10 {
@@ -334,6 +342,9 @@ func getSetuFromApi() (result Result, err error) {
 // postSetuToWeChat post setu to WeChat
 func postSetuToWeChat(post BotMsgReq) (err error) {
 	cfg := config.GetGlobalConfig()
+	if cfg.WeChatUrl == "" {
+		return nil
+	}
 	postStr, err := json.Marshal(post)
 	if err != nil {
 		fmt.Println("Json marshal post failed.", err)
