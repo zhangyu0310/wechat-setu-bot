@@ -218,7 +218,7 @@ func Run() {
 		if cfg.PicDump {
 			dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
 		}
-		var messages []BotMsgReq
+		messages := make([]BotMsgReq, 1)
 		postSetuText(result, cfg.AtAll, &messages)
 		// Post setu by different way
 		if cfg.NewsMsg {
