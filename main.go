@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 	"setuServer/config"
 	"setuServer/server"
@@ -75,11 +75,11 @@ func main() {
 	}
 	if *version {
 		// TODO: Print version info.(Version/GitCommit/CompileTime...)
-		fmt.Println("Version: v0.1.0")
+		log.Println("Version: v0.1.0")
 		os.Exit(0)
 	}
 	if *wechatUrl == "" && *transmitServer == "" {
-		fmt.Println("Error! Both of Wechat hook url and transmit server are empty.")
+		log.Println("Error! Both of Wechat hook url and transmit server are empty.")
 		flag.Usage()
 		os.Exit(1)
 	}

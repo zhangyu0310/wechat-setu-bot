@@ -14,6 +14,7 @@ import (
 	"image/png"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"setuServer/config"
@@ -29,7 +30,7 @@ func dumpPictureToLocalServer(result *Result, dumpClient transmit.PicCourierClie
 	for index, setu := range result.Setus {
 		name, err := getPictureName(setu.Urls.Original)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			continue
 		}
 		picFile, err := os.OpenFile(result.picPaths[index], os.O_RDONLY, 0666)
@@ -38,15 +39,15 @@ func dumpPictureToLocalServer(result *Result, dumpClient transmit.PicCourierClie
 		}
 		pic, err := ioutil.ReadAll(picFile)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			_ = picFile.Close()
 			continue
 		}
 		reply, err := dumpClient.SendPic(context.Background(), &transmit.PicRequest{Pic: pic, PicName: name})
 		if err != nil {
-			fmt.Println("Call dump pictures rpc failed.", err)
+			log.Println("Call dump pictures rpc failed.", err)
 		} else {
-			fmt.Println("Dump pictures success!", reply.Message)
+			log.Println("Dump pictures success!", reply.Message)
 			result.Setus[index].DumpUrl = dumpUrl + name
 		}
 		_ = picFile.Close()
@@ -64,9 +65,9 @@ func transmitSetu(courier transmit.SetuCourierClient, messages []BotMsgReq) {
 			PicMd5:      msg.Image.Md5}
 		reply, err := courier.SendSuTu(context.Background(), &setuReq)
 		if err != nil {
-			fmt.Println("Call dump pictures rpc failed.", err)
+			log.Println("Call dump pictures rpc failed.", err)
 		} else {
-			fmt.Println("Dump pictures success!", reply.ErrMessage)
+			log.Println("Dump pictures success!", reply.ErrMessage)
 		}
 	}
 }
@@ -88,7 +89,7 @@ func postSetuNews(result Result, transmitMsg *[]BotMsgReq) (err error) {
 		postNews := BotMsgReq{MsgType: BotMsgNews, News: news}
 		err = postSetuToWeChat(postNews)
 		if err != nil {
-			fmt.Println("Post setu news failed.")
+			log.Println("Post setu news failed.")
 			return
 		}
 		(*transmitMsg)[i].News = news
@@ -117,7 +118,7 @@ func postSetuText(result Result, atAll bool, transmitMsg *[]BotMsgReq) {
 		}
 		err := postSetuToWeChat(postText)
 		if err != nil {
-			fmt.Println("Post setu text failed.")
+			log.Println("Post setu text failed.")
 		}
 		(*transmitMsg)[i].Text = txt
 	}
@@ -130,13 +131,13 @@ func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 		for round := 0; round < 5; round++ {
 			fileInfo, err := os.Stat(picPath)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				break
 			}
 			if fileInfo.Size() > 2*1024*1024 {
 				picPath, err = picCompress(picPath)
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 					break
 				}
 			} else {
@@ -147,12 +148,12 @@ func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 		if compress {
 			picFile, err := os.OpenFile(picPath, os.O_RDONLY, 0666)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				continue
 			}
 			picData, err := ioutil.ReadAll(picFile)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				_ = picFile.Close()
 				continue
 			}
@@ -165,7 +166,7 @@ func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 			postPic := BotMsgReq{MsgType: BotMsgImage, Image: img}
 			err = postSetuToWeChat(postPic)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 			}
 			_ = picFile.Close()
 			(*transmitMsg)[i].Image = img
@@ -185,7 +186,7 @@ func Run() {
 				grpc.MaxCallSendMsgSize(31457280),
 				grpc.MaxCallRecvMsgSize(31457280)))
 		if err != nil {
-			fmt.Println("Connect dump server failed.", err)
+			log.Println("Connect dump server failed.", err)
 			os.Exit(-1)
 		}
 		setuConn, err := grpc.Dial(cfg.TransmitServer, grpc.WithInsecure(),
@@ -193,7 +194,7 @@ func Run() {
 				grpc.MaxCallSendMsgSize(31457280),
 				grpc.MaxCallRecvMsgSize(31457280)))
 		if err != nil {
-			fmt.Println("Connect transmit server failed.", err)
+			log.Println("Connect transmit server failed.", err)
 			os.Exit(-1)
 		}
 		dumpClient = transmit.NewPicCourierClient(picConn)
@@ -212,7 +213,7 @@ func Run() {
 		// Get setu info & download setu picture
 		result, err := getSetuFromApi()
 		if err != nil {
-			fmt.Println("Get setu failed.")
+			log.Println("Get setu failed.")
 			continue
 		}
 		if cfg.PicDump {
@@ -223,7 +224,7 @@ func Run() {
 		// Post setu by different way
 		if cfg.NewsMsg {
 			if err := postSetuNews(result, &messages); err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				continue
 			}
 		}
@@ -260,39 +261,39 @@ func getSetuFromApi() (result Result, err error) {
 	query := Query{R18: r18, Num: 1, Tag: cfg.Tags, Size: cfg.PicSize}
 	jsonStr, err := json.Marshal(query)
 	if err != nil {
-		fmt.Println("Marshal json failed.", err)
+		log.Println("Marshal json failed.", err)
 		return
 	}
 	req, err := http.NewRequest("POST", cfg.SetuApiUrl, bytes.NewBuffer(jsonStr))
 	if err != nil {
-		fmt.Println("Http request failed.", err)
+		log.Println("Http request failed.", err)
 		return
 	}
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("Http Do failed.", err)
+		log.Println("Http Do failed.", err)
 		return
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(resp.Body)
 	if resp.StatusCode != 200 {
-		fmt.Println("Http Get status is", resp.StatusCode, "not 200")
+		log.Println("Http Get status is", resp.StatusCode, "not 200")
 		return
 	}
 	bodyStr, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Read Http Get body failed.", err)
+		log.Println("Read Http Get body failed.", err)
 		return
 	}
 	err = json.Unmarshal(bodyStr, &result)
 	if err != nil {
-		fmt.Println("Json unmarshal failed.", err)
+		log.Println("Json unmarshal failed.", err)
 		return
 	}
 	if result.Error != "" {
-		fmt.Println("Result error! Error message:", result.Error)
+		log.Println("Result error! Error message:", result.Error)
 		return
 	}
 	// Don't need to get picture message, return
@@ -306,19 +307,19 @@ func getSetuFromApi() (result Result, err error) {
 		var dlResp *http.Response
 		dlReq, err = http.NewRequest("GET", setu.Urls.Original, bytes.NewBuffer([]byte("")))
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return
 		}
 		dlReq.Header.Set("Referer", "https://i.pixiv.cat/")
 		dlResp, err = http.DefaultClient.Do(dlReq)
 		if err != nil {
-			fmt.Println("Download picture failed.", err)
+			log.Println("Download picture failed.", err)
 			return
 		}
 		var name string
 		name, err = getPictureName(setu.Urls.Original)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			_ = dlResp.Body.Close()
 			continue
 		}
@@ -347,19 +348,19 @@ func postSetuToWeChat(post BotMsgReq) (err error) {
 	}
 	postStr, err := json.Marshal(post)
 	if err != nil {
-		fmt.Println("Json marshal post failed.", err)
+		log.Println("Json marshal post failed.", err)
 		return
 	}
 	respPost, err := http.Post(cfg.WeChatUrl, "application/json", bytes.NewBuffer(postStr))
 	if err != nil {
-		fmt.Println("Post to wechat failed", err)
+		log.Println("Post to wechat failed", err)
 		return
 	}
 	msg, err := ioutil.ReadAll(respPost.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
-	fmt.Println(string(msg))
+	log.Println(string(msg))
 	_ = respPost.Body.Close()
 	return
 }
