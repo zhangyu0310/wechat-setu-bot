@@ -60,7 +60,7 @@ func transmitSetu(courier transmit.SetuCourierClient, messages []BotMsgReq) {
 		setuReq := transmit.SeTuRequest{Title: article.Title,
 			Desc:        article.Description,
 			OriginalUrl: article.Picurl,
-			Url:         article.Url,
+			Url:         msg.Text.Content,
 			PicBase64:   msg.Image.Base64,
 			PicMd5:      msg.Image.Md5}
 		reply, err := courier.SendSuTu(context.Background(), &setuReq)
