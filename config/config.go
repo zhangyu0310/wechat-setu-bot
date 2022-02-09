@@ -22,6 +22,7 @@ type Config struct {
 	Tags           []string
 	PicSize        []string
 	Once           bool
+	Keep           bool
 }
 
 var (

@@ -140,6 +140,7 @@ func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 					log.Println(err)
 					break
 				}
+				defer os.RemoveAll(picPath)
 			} else {
 				compress = true
 				break
@@ -206,35 +207,45 @@ func Run() {
 		setuClient = transmit.NewSetuCourierClient(setuConn)
 	}
 	for {
-		// Get setu info & download setu picture
-		result, err := getSetuFromApi()
-		if err != nil {
-			log.Println("Get setu failed.")
-			continue
-		}
-		if cfg.PicDump {
-			dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
-		}
-		messages := make([]BotMsgReq, 1)
-		postSetuText(result, cfg.AtAll, &messages)
-		// Post setu by different way
-		if cfg.NewsMsg {
-			if err := postSetuNews(result, &messages); err != nil {
-				log.Println(err)
-				continue
-			}
-		}
-		// Post setu pic
-		if cfg.PicMsg {
-			postSetuPic(result, &messages)
-		}
-		if cfg.SetuTransmit {
-			transmitSetu(setuClient, messages)
-		}
+		tick(cfg, dumpClient, setuClient)
 		if cfg.Once {
 			break
 		}
 		time.Sleep(time.Duration(intervals) * time.Second)
+	}
+}
+
+func tick(cfg *config.Config, dumpClient transmit.PicCourierClient, setuClient transmit.SetuCourierClient) {
+	// Get setu info & download setu picture
+	result, err := getSetuFromApi()
+	if err != nil {
+		fmt.Println("Get setu failed.")
+		return
+	}
+	defer func() {
+		if cfg.Keep {
+			return
+		}
+		result.removeLocalPics()
+	}()
+	if cfg.PicDump {
+		dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
+	}
+	messages := make([]BotMsgReq, 1)
+	postSetuText(result, cfg.AtAll, &messages)
+	// Post setu by different way
+	if cfg.NewsMsg {
+		if err := postSetuNews(result, &messages); err != nil {
+			log.Println(err)
+			return
+		}
+	}
+	// Post setu pic
+	if cfg.PicMsg {
+		postSetuPic(result, &messages)
+	}
+	if cfg.SetuTransmit {
+		transmitSetu(setuClient, messages)
 	}
 }
 
