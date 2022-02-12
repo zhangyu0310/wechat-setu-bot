@@ -6,6 +6,31 @@
 <img src="https://raw.githubusercontent.com/zhangyu0310/wechat-setu-bot/main/pic/Snow.jpg" alt="avatar"/>
 </div>
 
+## 快速开始
+
+使用docker快速搭建基础功能的色图服务。
+
+```shell
+# 省略git和docker的安装过程，建议使用apt或yum快速解决
+git clone https://github.com/zhangyu0310/wechat-setu-bot.git
+cd wechat-setu-bot
+docker build -t centos:setubot .
+# 在 WECHAT_WEBHOOK="" 的双引号里，填入企业微信机器人的webhook
+docker run --name setu -e WECHAT_WEBHOOK="" -d centos:setubot
+```
+
+或者
+
+```
+# 无需要git，不拉源码，直接下载docker镜像
+docker　pull zhangyu0310/centos:setubot
+# 在 WECHAT_WEBHOOK="" 的双引号里，填入企业微信机器人的webhook
+docker run --name setu -e WECHAT_WEBHOOK="" -d centos:setubot
+```
+
+> 第一种方法相对节省流量，docker build是在本地完成的。第二种方法看起来简单一些，不过需要拉镜像，会消耗一定流量。<br>
+> 使用docker部署，仅提供了最基础的功能，没有图片转储、消息转发之类的能力。复杂功能需要参照下面的参数说明配置。
+
 ## 参数说明
 
 ```shell
