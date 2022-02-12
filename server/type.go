@@ -1,5 +1,7 @@
 package server
 
+import "os"
+
 // Query get setu info. TODO: Annotate field can be assigned
 type Query struct {
 	R18 int `json:"r18"`
@@ -26,6 +28,16 @@ func (result *Result) setPicPath(path string) {
 
 func (result *Result) getPicPath(index uint) string {
 	return result.picPaths[index]
+}
+
+func (result *Result) removeLocalPics() (err error) {
+	for _, p := range result.picPaths {
+		err = os.RemoveAll(p)
+		if err != nil {
+			return
+		}
+	}
+	return
 }
 
 type PicUrl struct {

@@ -140,6 +140,7 @@ func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 					log.Println(err)
 					break
 				}
+				defer os.RemoveAll(picPath)
 			} else {
 				compress = true
 				break
@@ -176,10 +177,15 @@ func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 
 // Run The main loop to send setu on time.
 func Run() {
-	first := true
 	cfg := config.GetGlobalConfig()
 	var dumpClient transmit.PicCourierClient
 	var setuClient transmit.SetuCourierClient
+
+	intervals := cfg.Intervals
+	if intervals < 10 {
+		intervals = 10
+	}
+
 	if cfg.PicDump {
 		picConn, err := grpc.Dial(cfg.DumpServer, grpc.WithInsecure(),
 			grpc.WithDefaultCallOptions(
@@ -200,41 +206,46 @@ func Run() {
 		dumpClient = transmit.NewPicCourierClient(picConn)
 		setuClient = transmit.NewSetuCourierClient(setuConn)
 	}
-	intervals := cfg.Intervals
-	if intervals < 10 {
-		intervals = 10
+	for {
+		tick(cfg, dumpClient, setuClient)
+		if cfg.Once {
+			break
+		}
+		time.Sleep(time.Duration(intervals) * time.Second)
 	}
-	for true {
-		if first {
-			first = false
-		} else {
-			time.Sleep(time.Duration(intervals) * time.Second)
+}
+
+func tick(cfg *config.Config, dumpClient transmit.PicCourierClient, setuClient transmit.SetuCourierClient) {
+	// Get setu info & download setu picture
+	result, err := getSetuFromApi()
+	if err != nil {
+		fmt.Println("Get setu failed.")
+		return
+	}
+	defer func() {
+		if cfg.Keep {
+			return
 		}
-		// Get setu info & download setu picture
-		result, err := getSetuFromApi()
-		if err != nil {
-			log.Println("Get setu failed.")
-			continue
+		result.removeLocalPics()
+	}()
+	if cfg.PicDump {
+		dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
+	}
+	messages := make([]BotMsgReq, 1)
+	postSetuText(result, cfg.AtAll, &messages)
+	// Post setu by different way
+	if cfg.NewsMsg {
+		if err := postSetuNews(result, &messages); err != nil {
+			log.Println(err)
+			return
 		}
-		if cfg.PicDump {
-			dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
-		}
-		messages := make([]BotMsgReq, 1)
-		postSetuText(result, cfg.AtAll, &messages)
-		// Post setu by different way
-		if cfg.NewsMsg {
-			if err := postSetuNews(result, &messages); err != nil {
-				log.Println(err)
-				continue
-			}
-		}
-		// Post setu pic
-		if cfg.PicMsg {
-			postSetuPic(result, &messages)
-		}
-		if cfg.SetuTransmit {
-			transmitSetu(setuClient, messages)
-		}
+	}
+	// Post setu pic
+	if cfg.PicMsg {
+		postSetuPic(result, &messages)
+	}
+	if cfg.SetuTransmit {
+		transmitSetu(setuClient, messages)
 	}
 }
 
