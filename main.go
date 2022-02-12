@@ -26,7 +26,7 @@ var (
 	tags           = flag.String("tags", "", "Tags of pictures")
 	picSize        = flag.String("pic-size", "original", "Size list of pictures")
 	once           = flag.Bool("once", false, "Run once and exit")
-	keep           = flag.Bool("keep", false, "Keep local original image")
+	keep           = flag.Bool("keep", true, "Keep local original image")
 )
 
 // tagsContentAnalysis analyze tags according to rules
