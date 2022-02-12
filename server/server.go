@@ -128,36 +128,38 @@ func postSetuPic(result Result, transmitMsg *[]BotMsgReq) {
 	for i := 0; i < len(result.Setus); i++ {
 		picPath := result.getPicPath(uint(i))
 		compress := false
+		fileInfo, err := os.Stat(picPath)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		picDataSize := fileInfo.Size()
+		picFile, err := os.OpenFile(picPath, os.O_RDONLY, 0666)
+		if err != nil {
+			return
+		}
+		picData, err := ioutil.ReadAll(picFile)
+		if err != nil {
+			return
+		}
+		err = picFile.Close()
+		if err != nil {
+			return
+		}
 		for round := 0; round < 5; round++ {
-			fileInfo, err := os.Stat(picPath)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-			if fileInfo.Size() > 2*1024*1024 {
-				picPath, err = picCompress(picPath)
+			if picDataSize > 2*1024*1024 {
+				picData, err = picCompress(picData)
 				if err != nil {
 					log.Println(err)
 					break
 				}
-				defer os.RemoveAll(picPath)
+				picDataSize = int64(len(picData))
 			} else {
 				compress = true
 				break
 			}
 		}
 		if compress {
-			picFile, err := os.OpenFile(picPath, os.O_RDONLY, 0666)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			picData, err := ioutil.ReadAll(picFile)
-			if err != nil {
-				log.Println(err)
-				_ = picFile.Close()
-				continue
-			}
 			picBase64 := base64.StdEncoding.EncodeToString(picData)
 			md5Hash := md5.New()
 			md5Hash.Write(picData)
@@ -226,7 +228,9 @@ func tick(cfg *config.Config, dumpClient transmit.PicCourierClient, setuClient t
 		if cfg.Keep {
 			return
 		}
-		result.removeLocalPics()
+		if err := result.removeLocalPics(); err != nil {
+			log.Println(err)
+		}
 	}()
 	if cfg.PicDump {
 		dumpPictureToLocalServer(&result, dumpClient, cfg.DumpUrl)
@@ -377,28 +381,19 @@ func postSetuToWeChat(post BotMsgReq) (err error) {
 }
 
 // picCompress Modify size to compress pictures.
-func picCompress(picPath string) (newPicPath string, err error) {
-	picFile, err := os.OpenFile(picPath, os.O_RDONLY, 0666)
+func picCompress(picData []byte) (newPicData []byte, err error) {
+	oldBuf := bytes.NewBuffer(picData)
+	pic, _, err := image.Decode(oldBuf)
 	if err != nil {
 		return
 	}
-	defer func(picFile *os.File) {
-		_ = picFile.Close()
-	}(picFile)
-	pic, _, err := image.Decode(picFile)
-	if err != nil {
-		return
-	}
-	newPicPath = picPath + "_" + time.Now().Format("15-04-05") + ".tmp.png"
 	newPic := resize.Resize(uint(pic.Bounds().Dx()/2), 0, pic, resize.Lanczos3)
-	newPicFile, err := os.OpenFile(newPicPath, os.O_WRONLY|os.O_CREATE, 0666)
+	var newBuf bytes.Buffer
+	err = png.Encode(&newBuf, newPic)
 	if err != nil {
 		return
 	}
-	defer func(newPicFile *os.File) {
-		_ = newPicFile.Close()
-	}(newPicFile)
-	err = png.Encode(newPicFile, newPic)
+	newPicData, err = ioutil.ReadAll(&newBuf)
 	if err != nil {
 		return
 	}

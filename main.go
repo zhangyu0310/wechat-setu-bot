@@ -79,7 +79,7 @@ func main() {
 	}
 	if *version {
 		// TODO: Print version info.(Version/GitCommit/CompileTime...)
-		log.Println("Version: v0.1.0")
+		log.Println("Version: v0.2.0")
 		os.Exit(0)
 	}
 	if *wechatUrl == "" && *transmitServer == "" {

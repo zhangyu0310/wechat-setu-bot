@@ -10,22 +10,27 @@
 .\setuServer.exe -at-all -dl-dir="./pic" -pic-msg -wechat-url="xxx" -intervals=3600 -r18
 ```
 
-|      参数       |             说明             |                    备注                    |
-| :-------------: | :--------------------------: | :----------------------------------------: |
-|    `-at-all`    |   具有该选项会自带@所有人    |                  bool类型                  |
-|    `-dl-dir`    |      指定下载图片的路径      |         仅在`-pic-msg`被指定时生效         |
-|     `-help`     |             帮助             |                                            |
-|  `-intervals`   | 色图推送间隔时间（单位：秒） | 默认60，最小10（别把人家色图服务搞挂了！） |
-|   `-pic-msg`    |     是否推送`Image`消息      |     bool类型，有这个参数的具体原因见下     |
-|   `-news-msg`   |     是否推送`News`消息       |     bool类型，默认为 true                  |
-|     `-r18`      |           懂得都懂           |                  bool类型                  |
-| `-setu-api-url` |         色图API Url          |  默认为`https://api.lolicon.app/setu/v1`   |
-|  `-wechat-url`  |    微信机器人Webhook地址     |                    必填                    |
-|   `-picDump`    |       是否开启图片转储       |                  bool类型                  |
-|  `-dumpServer`  |      图片转储服务器信息      |                  ip:port                   |
-|   `-dumpUrl`    |         图片转储域名         |      推送`Text`格式消息的转储图片Url       |
-|   `-once`       |   执行一次推送后立即退出     |将定时逻辑分离，可使用 crontab 等外部定时机制实现更灵活的控制      |
-|   `-keep`       |   保留本地原图     |代码执行过程中会将原图下载到本地，默认情况下会在推送完毕后清除原图。可通过本选项将原图保留|
+|        参数        |             说明             |                             备注                             |
+| :----------------: | :--------------------------: | :----------------------------------------------------------: |
+|     `-at-all`      |   具有该选项会自带@所有人    |                           bool类型                           |
+|     `-dl-dir`      |      指定下载图片的路径      |                  仅在`-pic-msg`被指定时生效                  |
+|   `-dumpServer`    |      图片转储服务器信息      |                           ip:port                            |
+|     `-dumpUrl`     |         图片转储域名         |               推送`Text`格式消息的转储图片Url                |
+|      `-help`       |             帮助             |                                                              |
+|    `-intervals`    | 色图推送间隔时间（单位：秒） |          默认60，最小10（别把人家色图服务搞挂了！）          |
+|      `-keep`       |         保留本地原图         | 推送`Image`消息需下载图片，该参数表示是否保留图片。默认为true |
+|    `-news-msg`     |      是否推送`News`消息      |                    bool类型，默认为 true                     |
+|      `-once`       |    执行一次推送后立即退出    | 将定时逻辑分离，可使用 crontab 等外部定时机制实现更灵活的控制 |
+|     `-picDump`     |       是否开启图片转储       |                           bool类型                           |
+|     `-pic-msg`     |     是否推送`Image`消息      |              bool类型，有这个参数的具体原因见下              |
+|    `-pic-size`     |    可以下载不同尺寸的图片    |                       默认为`original`                       |
+|       `-r18`       |           懂得都懂           |                           bool类型                           |
+|  `-setu-api-url`   |         色图API Url          |           默认为`https://api.lolicon.app/setu/v1`            |
+|  `-setu-transmit`  |           消息传递           |       将所有消息传递至转储服务，由其广播分发，具体见下       |
+|      `-tags`       |           图片标签           |              可以指定推送某种带有某个标签的图片              |
+| `-transmit-server` |      消息传递目标服务器      |                                                              |
+|     `-version`     |           打印版本           |                                                              |
+|   `-wechat-url`    |    微信机器人Webhook地址     |                             必填                             |
 
 ## 使用方法
 
@@ -45,6 +50,10 @@
 由于pixiv及其代理服务经常被墙，输出的域名经常无法打开。所以提供了转储功能，可以将服务部署在墙外服务器上，然后转储到墙内服务器。这个功能需要墙内的转储接收模块配合使用。
 
 [EasyPicServer](https://github.com/zhangyu0310/EasyPicServer)
+
+## 关于消息传递
+
+如果不希望只推送到一个webhook上，可以将消息转发至[EasyPicServer](https://github.com/zhangyu0310/EasyPicServer)，由其代为广播。它已经实现了简单的webhook注册页面，开箱即用。为什么不直接使用这个服务广播呢？为了节省跨境服务器的流量费用。。。
 
 ## 效果截图
 
